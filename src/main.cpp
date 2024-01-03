@@ -49,11 +49,12 @@ auto main(int argc, char *argv[]) -> int
         return 1;
     }
 
-    const string_view view = memblock;
     const auto filesize = file_stat.st_size;
+    const string_view view (memblock, filesize);
     const auto num_procs = get_nprocs();
     const int64_t size_per_thread = filesize / num_procs;
 
+    // chunk input
     std::vector<struct Chunk> chunks;
     chunks.reserve(num_procs);
 
