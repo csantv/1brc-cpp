@@ -127,6 +127,7 @@ auto main(int argc, char *argv[]) -> int
 
     // sort alphabetically (prevent copying)
     std::vector<entry_type> result_vector;
+    result_vector.reserve(result.size());
     std::ranges::move(result, std::back_inserter(result_vector));
     std::ranges::sort(result_vector, [] (const entry_type& pair1, const entry_type& pair2) {
         return pair1.first < pair2.first;
