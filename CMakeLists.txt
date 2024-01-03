@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE Debug CACHE STRING "build type")
 
-project(cpp-repo-template LANGUAGES CXX)
+project(1brc LANGUAGES CXX)
 add_executable(${PROJECT_NAME})
 
 find_package(TBB REQUIRED)
