@@ -63,27 +63,28 @@ auto main(int argc, char *argv[]) -> int
     string_view::size_type prev_idx = 0;
     for (int i = 0; i < num_procs; ++i) {
         const auto next_idx = view.find('\n', begin_idx);
-        if (next_idx == string_view::npos) {
-            break;
+        if (next_idx != string_view::npos) {
+            chunks.push_back({
+                .str_chunk = string_view {runner, next_idx - prev_idx},
+                .idx = i,
+            });
+            runner += next_idx - prev_idx + 1;
+            prev_idx = next_idx + 1;
+            begin_idx = next_idx + size_per_thread;
+        } else {
+            chunks.push_back({
+                .str_chunk = string_view {runner, filesize - prev_idx},
+                .idx = num_procs - 1,
+            });
         }
-        chunks.push_back({
-            .str_chunk = string_view {runner, next_idx - prev_idx},
-            .idx = i,
-        });
-        runner += next_idx - prev_idx + 1;
-        prev_idx = next_idx + 1;
-        begin_idx = next_idx + size_per_thread;
     }
-    chunks.push_back({
-        .str_chunk = string_view {runner},
-        .idx = num_procs - 1,
-    });
 
+    // process chunked input
     std::vector<std::unordered_map<std::string_view, std::vector<float>>> result_map (num_procs);
     std::for_each(std::execution::par_unseq, chunks.begin(), chunks.end(), [&result_map] (struct Chunk& chunk) {
         const int num_cities = 500;
         const int to_reserve = 1048576;
-        auto& local_map = result_map[chunk.idx];
+        auto& local_map = result_map.at(chunk.idx);
 
         auto view = chunk.str_chunk;
         local_map.reserve(num_cities);
@@ -97,7 +98,6 @@ auto main(int argc, char *argv[]) -> int
 
             const auto semicolon = token.find(';');
             const auto city = token.substr(0, semicolon);
-
             const auto measurement_str = token.substr(semicolon + 1);
             const auto measurement = std::stof(std::string{measurement_str});
             const auto [entry, inserted] = local_map.insert({city, {}});
@@ -125,9 +125,10 @@ auto main(int argc, char *argv[]) -> int
         }
     }
 
-    // sort alphabetically
-    std::vector<std::pair<string_view, std::vector<float>>> result_vector (result.begin(), result.end());
-    std::sort(result_vector.begin(), result_vector.end(), [] (const entry_type& pair1, const entry_type& pair2) {
+    // sort alphabetically (prevent copying)
+    std::vector<entry_type> result_vector;
+    std::ranges::move(result, std::back_inserter(result_vector));
+    std::ranges::sort(result_vector, [] (const entry_type& pair1, const entry_type& pair2) {
         return pair1.first < pair2.first;
     });
 
